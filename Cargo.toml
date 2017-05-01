@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Pierre Zemb <contact@pierrezemb.fr>"]
 
 [dependencies]
+clap = "~2.19.0"
+git2 = "0.6"
+regex = "0.2"

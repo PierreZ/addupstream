@@ -1,4 +1,4 @@
-# AddUpstream
+# AddUpstream [![Build Status](https://travis-ci.org/PierreZ/addupstream.svg?branch=master)](https://travis-ci.org/PierreZ/addupstream)
 
 A small cli to automatically add upstream remotes to a git project. Only working with Github for the moment.
 
