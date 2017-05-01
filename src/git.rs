@@ -2,6 +2,16 @@ use git2::{Error, Repository};
 use std::env;
 use std::string;
 use regex::Regex;
+use hyper::Client;
+use hyper::Url;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
+use hyper::header::UserAgent;
+use std::process;
+use serde_json;
+use std::io::Read;
+use serde_json::Value;
+
 
 /// if repo name is not setted in cli, we need to get it from git
 pub fn get_repo_from_current_folder(remote_name: &str) -> Result<string::String, Error> {
@@ -43,7 +53,7 @@ fn test_get_repo_from_url() {
 }
 
 /// add_remote is adding the remote to the current directory
-pub fn add_remote(remote_name: string::String) {
+pub fn add_remote(remote_name: string::String, upstream_custom: string::String) {
 
     // Get current path
     let current_path = env::current_dir().unwrap();
@@ -54,12 +64,42 @@ pub fn add_remote(remote_name: string::String) {
         Err(e) => panic!("failed to open: {}, not a git repo, exiting", e),
     };
 
-    match repo.remote("upstream", remote_name.as_str()) {
+    match repo.remote(upstream_custom.as_str(), remote_name.as_str()) {
         Ok(r) => r,
         Err(e) => panic!("failed to add remote: {}, exiting", e),
     };
 }
 
-// pub fn find_upstream(repo_name: string::String) -> string::String {
+pub fn find_upstream(repo_name: string::String) -> string::String {
 
-// }
+    let mut url = String::from("https://api.github.com/repos/");
+    url.push_str(repo_name.as_str());
+
+    let uri = Url::parse(url.as_str()).ok().expect("malformed url");
+
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector);
+
+    let mut res = match client.get(uri)
+              .header(UserAgent("PierreZ/addupstream".to_string()))
+              .send() {
+        Ok(res) => res,
+        Err(e) => {
+            println!("Error accessing github API: {}", e);
+            process::exit(1);
+        }
+    };
+
+    if !res.status.is_success() {
+        println!("Error accessing github API, status code is {}", res.status);
+        process::exit(1);
+    }
+
+    let mut body = String::new();
+    res.read_to_string(&mut body).unwrap();
+
+    let v: Value = serde_json::from_str(body.as_str()).unwrap();
+
+    return String::from(v["parent"]["clone_url"].as_str().unwrap_or(""));
+}

@@ -9,3 +9,17 @@ git clone https://github.com/PierreZ/addupstream
 cd upstream
 cargo build
 ```
+
+## How to use
+
+just run the binary in a git repo that you forked using Github' UI.
+
+```bash 
+addupstream
+```
+
+## Options
+
+```bash 
+addupstream --help
+```
