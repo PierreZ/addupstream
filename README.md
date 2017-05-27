@@ -10,6 +10,12 @@ cd upstream
 cargo build
 ```
 
+## How to install
+
+```bash
+cargo install --git https://github.com/PierreZ/addupstream
+```
+
 ## How to use
 
 just run the binary in a git repo that you forked using Github' UI.
