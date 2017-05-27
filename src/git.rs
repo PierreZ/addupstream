@@ -33,7 +33,8 @@ pub fn get_repo_from_current_folder(remote_name: &str) -> Result<string::String,
 
 /// get_repo_from_url is transforming a full repo url into user/repo
 pub fn get_repo_from_url(url: string::String) -> string::String {
-    let re = Regex::new(r":[a-zA-Z0-9]*/[a-zA-Z0-9]*.git$").unwrap();
+
+    let re = Regex::new(r":.*.git$").unwrap();
     let mut user_repo = String::new();
 
     for cap in re.captures_iter(url.as_str()) {
