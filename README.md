@@ -2,7 +2,7 @@
 
 A small cli to automatically add upstream remotes to a git project. Only working with Github for the moment.
 
-[![asciicast](https://asciinema.org/a/3tlww7jp8yf0bj69sihjkji5n.png)](https://asciinema.org/a/3tlww7jp8yf0bj69sihjkji5n)
+[![asciicast](https://asciinema.org/a/123468.png)](https://asciinema.org/a/123468)
 
 ## How to build
 
