@@ -2,6 +2,8 @@
 
 A small cli to automatically add upstream remotes to a git project. Only working with Github for the moment.
 
+[![asciicast](https://asciinema.org/a/3tlww7jp8yf0bj69sihjkji5n.png)](https://asciinema.org/a/3tlww7jp8yf0bj69sihjkji5n)
+
 ## How to build
 
 ```bash
