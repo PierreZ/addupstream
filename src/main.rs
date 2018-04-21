@@ -1,76 +1,136 @@
-extern crate clap;
+#[macro_use]
+extern crate log;
 extern crate git2;
+#[macro_use]
+extern crate structopt;
 extern crate regex;
-extern crate hyper;
-extern crate serde;
+extern crate reqwest;
 extern crate serde_json;
-extern crate hyper_native_tls;
 
-// #[macro_use]
-// extern crate serde_derive;
-
-use clap::{Arg, App};
-use std::process;
+use git2::Repository;
+use regex::Regex;
+use serde_json::Value;
+use std::error::Error;
 use std::io;
+use std::process;
+use structopt::StructOpt;
 
-mod git;
+#[derive(StructOpt, Debug)]
+#[structopt(
+    name = "addupstream",
+    about = "A small cli to automatically add upstream remotes to a git project. "
+)]
+struct Opt {
+    #[structopt(
+        short = "o",
+        long = "origin",
+        default_value = "origin",
+        help = "The name of your default remote. Set this if not using origin"
+    )]
+    origin: String,
+
+    /// Output file
+    #[structopt(
+        short = "u",
+        long = "upstream",
+        default_value = "upstream",
+        help = "The name of your default remote. Set this if you don't want upstream as the remote name"
+    )]
+    upstream: String,
+}
 
 fn main() {
-    let matches = App::new("addupstream")
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .arg(Arg::with_name("origin_overwrite")
-                 .help("The name of your default remote. Set this if not using origin")
-                 .long("overwrite_origin")
-                 .short("o")
-                 .takes_value(true)
-                 .required(false))
-                         .arg(Arg::with_name("upstream_overwrite")
-                 .help("The name of your default remote. Set this if you don't want upstream as the remote name")
-                 .long("upstream_origin")
-                 .short("u")
-                 .takes_value(true)
-                 .required(false))
-        .get_matches();
-
-    let remote_name = matches.value_of("origin_overwrite")
-        .unwrap_or("origin"); // Default is for the default branch is origin
-
-    let upstream = matches.value_of("upstream_overwrite")
-        .unwrap_or("upstream"); // Default is for the upstream remote is upstream
-
-    let local_repo_name = match git::get_repo_from_current_folder(remote_name) {
-        Ok(r) => r, 
-        Err(e) => {
-            println!("Error accessing local repo name: {}", e);
+    let opt = Opt::from_args();
+    let origin_url = match get_origin_remote(&opt.origin) {
+        Ok(origin_url) => origin_url,
+        Err(error) => {
+            error!("There was a problem to find the origin: {:?}", error);
             process::exit(1);
         }
     };
 
-    println!("Finding upstream for {}...", local_repo_name);
+    let repo_name = match get_repo_name(origin_url.as_str()) {
+        Ok(repo_name) => repo_name,
+        Err(error) => {
+            error!("There was a problem to find repo name: {:?}", error);
+            process::exit(1);
+        }
+    };
+    println!("Finding upstream for {}...", repo_name);
 
-    let upstream_url = git::find_upstream(local_repo_name);
-    if upstream_url.len() == 0 {
-        println!("Couldn't find any parent. Did you fork the project?");
-        process::exit(1);
-    }
+    let remote_url = match get_fork_remote_url(&repo_name) {
+        Ok(remote_url) => remote_url,
+        Err(error) => {
+            error!("There was a problem to find repo name: {:?}", error);
+            process::exit(1);
+        }
+    };
 
     let mut input = String::new();
 
-    println!("I found this upstream: {}. Do You want to add it? (y,n)",
-             upstream_url);
+    println!(
+        "I found this upstream: {}. Do You want to add it?",
+        remote_url
+    );
+    println!("(y,n)");
 
     io::stdin()
         .read_line(&mut input)
         .expect("Failed to read line");
 
-    if input == "y\n" {
-        git::add_remote(upstream_url, String::from(upstream));
-        println!("upstream added");
-        process::exit(0);
+    match input.as_ref() {
+        "yes\n" | "y\n" => {
+            add_remote(remote_url, opt.upstream).unwrap();
+            println!("Done!");
+        }
+        _ => println!("Exiting"),
     }
 
-    println!("Exiting");
     process::exit(0);
+}
+
+// Returns for example 'git@github.com:PierreZ/addupstream.git'
+fn get_origin_remote(_origin_name: &str) -> Result<String, Box<Error>> {
+    let repo = Repository::open_from_env()?;
+    let remote = repo.find_remote(_origin_name)?;
+    match remote.url() {
+        Some(remote_url) => Ok(String::from(remote_url)),
+        None => panic!("Could not find an remote called '{}'", _origin_name),
+    }
+}
+
+fn get_repo_name(url: &str) -> Result<String, Box<Error>> {
+    let re = Regex::new(r":.*.git$").unwrap();
+
+    let caps = match re.captures(url) {
+        Some(matches) => matches,
+        None => panic!("Could not find an repo name on '{}'", url),
+    };
+
+    let mut user_repo = caps.get(0).unwrap().as_str().to_string();
+
+    user_repo.remove(0); // removing :
+    let (first, _) = user_repo.split_at(user_repo.len() - 4); // removing .git
+
+    Ok(String::from(first))
+}
+
+fn get_fork_remote_url(repo: &str) -> Result<String, Box<Error>> {
+    let url = format!("https://api.github.com/repos/{}", repo);
+    let body = reqwest::get(&url)?.text()?;
+
+    let json: Value = serde_json::from_str(body.as_str())?;
+
+    let clone_url = match json["parent"]["clone_url"].as_str() {
+        Some(clone_url) => clone_url,
+        None => panic!("Couldn't find any parent. Did you fork the project?"),
+    };
+
+    Ok(String::from(clone_url))
+}
+
+fn add_remote(remote_url: String, upstream_name: String) -> Result<(), Box<Error>> {
+    let repo = Repository::open_from_env()?;
+    repo.remote(upstream_name.as_str(), remote_url.as_str())?;
+    Ok(())
 }
