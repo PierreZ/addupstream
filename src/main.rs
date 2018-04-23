@@ -115,6 +115,18 @@ fn get_repo_name(url: &str) -> Result<String, Box<Error>> {
     Ok(String::from(first))
 }
 
+#[test]
+fn test_get_repo_from_url() {
+    assert_eq!(
+        "PierreZ/addupstream",
+        get_repo_name(&String::from("git@github.com:PierreZ/addupstream.git")).unwrap()
+    );
+    assert_eq!(
+        "PierreZ/warp10-platform",
+        get_repo_name(&String::from("git@github.com:PierreZ/warp10-platform.git")).unwrap()
+    );
+}
+
 fn get_fork_remote_url(repo: &str) -> Result<String, Box<Error>> {
     let url = format!("https://api.github.com/repos/{}", repo);
     let body = reqwest::get(&url)?.text()?;
