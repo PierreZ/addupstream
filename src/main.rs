@@ -107,15 +107,8 @@ fn get_origin_remote(_origin_name: &str) -> Result<String, Box<Error>> {
 fn get_repo_name(url: &str) -> Result<String, Box<Error>> {
     let re = Regex::new(r":.*.git$").unwrap();
 
-    let caps = match re.captures(url) {
-        Some(matches) => matches,
-        None => {
-            return Err(Box::new(SimpleError::new(format!(
-                "Could not find an repo name on '{}'",
-                url
-            ))))
-        }
-    };
+    let caps = re.captures(url)
+        .ok_or_else(|| SimpleError::new(format!("Could not find an repo name on '{}'", url)))?;
 
     let mut user_repo = caps.get(0).unwrap().as_str().to_string();
 
@@ -143,10 +136,9 @@ fn get_fork_remote_url(repo: &str) -> Result<String, Box<Error>> {
 
     let json: Value = serde_json::from_str(body.as_str())?;
 
-    let clone_url = match json["parent"]["clone_url"].as_str() {
-        Some(clone_url) => clone_url,
-        None => panic!("Couldn't find any parent. Did you fork the project?"),
-    };
+    let clone_url = json["parent"]["clone_url"]
+        .as_str()
+        .ok_or_else(|| SimpleError::new("Couldn't find any parent. Did you fork the project?"))?;
 
     Ok(String::from(clone_url))
 }
