@@ -6,10 +6,12 @@ extern crate structopt;
 extern crate regex;
 extern crate reqwest;
 extern crate serde_json;
+extern crate simple_error;
 
 use git2::Repository;
 use regex::Regex;
 use serde_json::Value;
+use simple_error::SimpleError;
 use std::error::Error;
 use std::io;
 use std::process;
@@ -95,7 +97,10 @@ fn get_origin_remote(_origin_name: &str) -> Result<String, Box<Error>> {
     let remote = repo.find_remote(_origin_name)?;
     match remote.url() {
         Some(remote_url) => Ok(String::from(remote_url)),
-        None => panic!("Could not find an remote called '{}'", _origin_name),
+        None => Err(Box::new(SimpleError::new(format!(
+            "Could not find an remote called '{}'",
+            _origin_name
+        )))),
     }
 }
 
@@ -104,7 +109,12 @@ fn get_repo_name(url: &str) -> Result<String, Box<Error>> {
 
     let caps = match re.captures(url) {
         Some(matches) => matches,
-        None => panic!("Could not find an repo name on '{}'", url),
+        None => {
+            return Err(Box::new(SimpleError::new(format!(
+                "Could not find an repo name on '{}'",
+                url
+            ))))
+        }
     };
 
     let mut user_repo = caps.get(0).unwrap().as_str().to_string();
