@@ -22,12 +22,12 @@ cargo install --git https://github.com/PierreZ/addupstream
 
 just run the binary in a git repo that you forked using Github' UI.
 
-```bash 
+```bash
 addupstream
 ```
 
 ## Options
 
-```bash 
+```bash
 addupstream --help
 ```
