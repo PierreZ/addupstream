@@ -1,6 +1,5 @@
-#[macro_use]
-extern crate log;
 extern crate git2;
+extern crate log;
 #[macro_use]
 extern crate structopt;
 extern crate regex;
@@ -14,7 +13,6 @@ use serde_json::Value;
 use simple_error::SimpleError;
 use std::error::Error;
 use std::io;
-use std::process;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -41,40 +39,20 @@ struct Opt {
     upstream: String,
 }
 
-fn main() {
+fn main() -> Result<(), Box<Error>> {
     let opt = Opt::from_args();
-    let origin_url = match get_origin_remote(&opt.origin) {
-        Ok(origin_url) => origin_url,
-        Err(error) => {
-            error!("There was a problem to find the origin: {:?}", error);
-            process::exit(1);
-        }
-    };
+    let origin_url = get_origin_remote(&opt.origin)?;
 
-    let repo_name = match get_repo_name(origin_url.as_str()) {
-        Ok(repo_name) => repo_name,
-        Err(error) => {
-            error!("There was a problem to find repo name: {:?}", error);
-            process::exit(1);
-        }
-    };
+    let repo_name = get_repo_name(origin_url.as_str())?;
     println!("Finding upstream for {}...", repo_name);
 
-    let remote_url = match get_fork_remote_url(&repo_name) {
-        Ok(remote_url) => remote_url,
-        Err(error) => {
-            error!("There was a problem to find repo name: {:?}", error);
-            process::exit(1);
-        }
-    };
+    let remote_url = get_fork_remote_url(&repo_name)?;
 
     let mut input = String::new();
-
     println!(
-        "I found this upstream: {}. Do You want to add it?",
+        "I found this upstream: {}. Do You want to add it? (y,n)",
         remote_url
     );
-    println!("(y,n)");
 
     io::stdin()
         .read_line(&mut input)
@@ -88,7 +66,7 @@ fn main() {
         _ => println!("Exiting"),
     }
 
-    process::exit(0);
+    Ok(())
 }
 
 // Returns for example 'git@github.com:PierreZ/addupstream.git'

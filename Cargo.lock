@@ -1,6 +1,6 @@
 [[package]]
 name = "addupstream"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "git2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
