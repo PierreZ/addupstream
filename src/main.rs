@@ -1,6 +1,5 @@
 extern crate git2;
 extern crate log;
-#[macro_use]
 extern crate structopt;
 extern crate regex;
 extern crate reqwest;
