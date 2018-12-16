@@ -1,11 +1,3 @@
-extern crate git2;
-extern crate log;
-extern crate structopt;
-extern crate regex;
-extern crate reqwest;
-extern crate serde_json;
-extern crate simple_error;
-
 use git2::Repository;
 use regex::Regex;
 use serde_json::Value;
@@ -84,7 +76,8 @@ fn get_origin_remote(_origin_name: &str) -> Result<String, Box<Error>> {
 fn get_repo_name(url: &str) -> Result<String, Box<Error>> {
     let re = Regex::new(r":.*.git$").unwrap();
 
-    let caps = re.captures(url)
+    let caps = re
+        .captures(url)
         .ok_or_else(|| SimpleError::new(format!("Could not find an repo name on '{}'", url)))?;
 
     let mut user_repo = caps.get(0).unwrap().as_str().to_string();

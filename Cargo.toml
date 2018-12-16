@@ -1,7 +1,15 @@
 [package]
 name = "addupstream"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Pierre Zemb <contact@pierrezemb.fr>"]
+edition = "2018"
+license = "MIT"
+description = "A small cli to automatically add upstream remotes to a Github project"
+readme = "README.md"
+homepage = "https://github.com/PierreZ/addupstream"
+repository = "https://github.com/PierreZ/addupstream"
+keywords = ["cli", "git", "github"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 structopt = "0.2"
